@@ -1,0 +1,4 @@
+[submodule "external/AIdanFold"]
+	path = external/AIdanFold
+	url = https://github.com/aidanbio/AIdanFold.git
+	branch = claude/intelligent-ritchie-hcuqk9

@@ -10,10 +10,12 @@
 ## 이 저장소를 찾아온 이유가 ADMET 예측 논문 때문이라면
 
 *Bull. Korean Chem. Soc.* 2026;47:756–768 (DOI: [10.1002/bkcs.70177](https://doi.org/10.1002/bkcs.70177))의
-Data Availability Statement가 안내한 코드는 **[`models/ADMETpred/`](models/ADMETpred/)** 에 있다. 이
-저장소는 원래 그 논문 코드만 담고 있었는데, 이후 전체 에이전틱 신약발굴 솔루션의 컨테이너로 확장됐다
-(과거엔 `AIdanMol`이라는 별도 컨테이너 저장소가 있었으나 이 저장소로 통합됐다). 논문 재현에 필요한
-파일 구성 자체는 그대로이고 위치만 `models/ADMETpred/`로 옮겨졌다.
+Data Availability Statement 관련 안내:
+
+- 논문이 안내하는 코드 위치: **[`models/ADMETpred/`](models/ADMETpred/)**
+- 본 저장소는 원래 해당 논문 코드만 포함했음. 이후 에이전틱 신약발굴 솔루션 전체의 컨테이너로 확장됨.
+- 과거 별도 컨테이너 저장소 `AIdanMol`이 존재했으나 본 저장소로 통합됨.
+- 논문 재현에 필요한 파일 구성은 동일함. 위치만 `models/ADMETpred/`로 이동함.
 
 ## 구성 요소
 

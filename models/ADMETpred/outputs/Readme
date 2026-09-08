@@ -1,0 +1,40 @@
+# Outputs (trained fold checkpoints)
+
+The trained model checkpoints exceed GitHub's per-file size limit and are therefore hosted
+externally on Google Drive.
+
+**Google Drive folder:**
+https://drive.google.com/drive/folders/1eg3jg03AxiLlj6UO3MIj2ro-o-47ds0w
+
+## Files
+
+Five TDC scaffold-split folds, each fine-tuned with lr=3e-5, focal MAE gamma=2.0, epoch 15
+(matches Table 1 of the BKCS 2026 paper -- see the top-level `models/ADMETpred/README.md`).
+Download each fold's files and place them under this directory as:
+
+```
+outputs/
+  debeta_f0_lr3_g2_15ep/
+    checkpoint_epoch_15.pth
+    label_mean_std.npz
+  debeta_f1_lr3_g2_15ep/
+    checkpoint_epoch_15.pth
+    label_mean_std.npz
+  debeta_f2_lr3_g2_15ep/
+    checkpoint_epoch_15.pth
+    label_mean_std.npz
+  debeta_f3_lr3_g2_15ep/
+    checkpoint_epoch_15.pth
+    label_mean_std.npz
+  debeta_f4_lr3_g2_15ep/
+    checkpoint_epoch_15.pth
+    label_mean_std.npz
+```
+
+`label_mean_std.npz` is identical across all five folds (normalization stats are computed on
+the full dataset before the fold split), so any one fold's copy works for all of them --
+downloading all five here is just for convenience of directory layout.
+
+`inference.py`'s `run_inference` expects exactly this layout and, when given more than one
+fold directory, reports the fold-ensemble mean and fold-to-fold standard deviation per
+endpoint (see `docs/ARCHITECTURE.md` section 3).

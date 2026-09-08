@@ -1,1 +1,7 @@
 data/
+
+# Model checkpoints: kept locally only, never tracked or pushed
+outputs/
+*.pth
+*.npz
+

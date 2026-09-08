@@ -1,11 +1,10 @@
 # AIdanChem
 
-타겟 단백질에 대한 small-molecule 신약후보 물질 제안을 위한 Agentic Harness. Claude Code나 OpenClaw처럼
-대화형으로 쓰는 걸 목표로 한다. 스킬(skill) 구조는 [bioSkills](https://github.com/GPTomics/bioSkills)의
-형식을 참고했다.
-
-전체 아키텍처, 파이프라인 설계, 각 모델의 현재 상태와 실측 검증 결과는
-**[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** 에 정리되어 있다.
+- 타겟 단백질 대상 small-molecule 신약후보 물질 제안용 Agentic Harness임.
+- Claude Code, OpenClaw와 유사하게 대화형으로 사용하는 것을 목표로 함.
+- 스킬(skill) 구조는 [bioSkills](https://github.com/GPTomics/bioSkills) 형식을 참고함.
+- 전체 아키텍처, 파이프라인 설계, 각 모델의 현재 상태 및 실측 검증 결과는
+  **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** 에 정리되어 있음.
 
 ## 이 저장소를 찾아온 이유가 ADMET 예측 논문 때문이라면
 

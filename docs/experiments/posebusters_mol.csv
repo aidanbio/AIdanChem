@@ -1,2 +1,0 @@
-file,molecule,position,mol_pred_loaded,sanitization,inchi_convertible,all_atoms_connected,no_radicals,bond_lengths,bond_angles,internal_steric_clash,aromatic_ring_flatness,non-aromatic_ring_non-flatness,double_bond_flatness,internal_energy
-ligand_pose.sdf,,0,True,True,True,True,True,False,False,True,False,True,True,False

@@ -1,5 +1,5 @@
-"""Run flow_fape_ema2 on trypsin + benzamidine, extract the ligand pose,
-build an RDKit mol, and validate it with PoseBusters.
+"""Run AIdanFold's deployed flow-matching checkpoint on trypsin + benzamidine,
+extract the ligand pose, build an RDKit mol, and validate it with PoseBusters.
 
 This is a feasibility smoke test: AIdanFold's flow-matching structure head
 was trained/validated protein-only; here we test whether it produces a
@@ -7,19 +7,27 @@ physically plausible ligand pose when fed a protein+ligand complex via
 ESMFold2's native (but until now untested, for this head) co-folding input.
 """
 import sys, os, json
-sys.path.insert(0, "/data/trunk/AIdanFold/src")
-sys.path.insert(0, "/data/trunk/AIdanFold")
-os.chdir("/data/trunk/AIdanFold")
+
+# Run from the AIdanFold working tree root (the checkout that has models/ +
+# checkpoints/, not the git submodule reference) with that root on sys.path.
+AIDANFOLD_ROOT = os.environ.get("AIDANFOLD_ROOT", ".")
+sys.path.insert(0, os.path.join(AIDANFOLD_ROOT, "src"))
+sys.path.insert(0, AIDANFOLD_ROOT)
+os.chdir(AIDANFOLD_ROOT)
 
 import torch
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-OUT_DIR = "/tmp/claude-1000/-data-trunk-AIdanMol/2829fcf8-a3da-4a78-883a-3ec0916d9d27/scratchpad/ligand_probe"
+OUT_DIR = os.environ.get("PROBE_OUT_DIR", "./ligand_probe_out")
+os.makedirs(OUT_DIR, exist_ok=True)
 
 TRYPSIN = ("IVGGYTCGANTVPYQVSLNSGSHFCGGSLINSQWVVSAAHCYKSGIQVRLGEDNINVVEGNEQFISASKSIVHPSYNSNTLNNDIMLIKLKSAASLNSRVASISLPTSCASAGTQCLISGWGNTKSSGTSYPDVLKCLKAPILSDSSCKSAYPGQITSNMFCAGYLEGGKDSCQGDSGGPVVCSGKLQGIVSWGSGCAQKNKPGVYTKVCNYVSWIKQTIASN")
 LIGAND_SMILES = "NC(=[NH2+])c1ccccc1"
-CKPT = "checkpoints/flow_fape_ema2/flow_head_epoch62.pt"
+# Path to the deployed flow-matching checkpoint (see docs/ARCHITECTURE.md section 4
+# for how to obtain/select one); not committed here since checkpoint files/paths
+# are internal to the AIdanFold project.
+CKPT = os.environ["AIDANFOLD_CKPT"]
 MODEL_DIR = "models/esmfold2_fast_cutoff2025"
 
 

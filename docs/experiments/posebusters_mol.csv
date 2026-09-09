@@ -1,2 +1,2 @@
 file,molecule,position,mol_pred_loaded,sanitization,inchi_convertible,all_atoms_connected,no_radicals,bond_lengths,bond_angles,internal_steric_clash,aromatic_ring_flatness,non-aromatic_ring_non-flatness,double_bond_flatness,internal_energy
-/tmp/claude-1000/-data-trunk-AIdanMol/2829fcf8-a3da-4a78-883a-3ec0916d9d27/scratchpad/ligand_probe/ligand_pose.sdf,,0,True,True,True,True,True,False,False,True,False,True,True,False
+ligand_pose.sdf,,0,True,True,True,True,True,False,False,True,False,True,True,False

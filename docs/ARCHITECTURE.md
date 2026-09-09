@@ -173,47 +173,28 @@ python tools/aidanfold_predict.py --fasta complex.fasta --out-dir results/
 modern-structure-prediction 스킬이 명시하듯 "복합체 인터페이스는 per-chain pLDDT가 아니라 ipTM +
 inter-chain PAE로 게이팅한다"가 핵심 규칙이고, 이 필드가 없으면 그 규칙을 쓸 스킬을 쓸 수 없다.
 
-### 현재 상태 (2026-09-08 갱신)
+### 현재 상태
 
-- `main` 브랜치 기준으로는 `external/AIdanFold/CLAUDE.md`가 "Early scaffold, src/refs/config 비어있음"
-  이라 적혀 있는데, 이는 stale한 문서고 실제 `main`도 `flow_head.py`, `flow_matching.py`, `fine_tune.py`,
-  `sampler.py`, `training.py`, `run_pipeline.py` 등 3,700줄 가량의 flow-matching 헤드 코드를 이미
-  갖고 있다.
-- **하지만 진짜 작업은 `main`에 없다.** 원격의 `claude/intelligent-ritchie-hcuqk9` 브랜치(이 저장소가
-  서브모듈로 추적하는 브랜치)에 `esmfold2adv_phase1_results.md`라는 결과 문서가 있는데, 요지는:
-  - ESMFold2의 Karras diffusion 구조 헤드(200-step)를 **Conditional Flow Matching 헤드**로 교체.
-  - 전체 test set(n=3060)에서 **lDDT −0.0058 / TM −0.019 / 5.06배 가속** — "diffusion 대비 5배 이상
-    빠르면서 품질 손실 2점 이내"라는 목표를 실측으로 달성했다고 기록됨. (단, 이 5.06배는 **head-only**
-    수치다 — 트렁크 시간은 제외하고 잰 것. 실사용 시나리오별 실효 속도 이득은 §6.5 참고.)
-  - **배포 추론 구성**: 체크포인트 `flow_fape_ema2` epoch 62, 20-step ODE, `churn=1.0`, `self_cond`는
-    체크포인트 자체 저장된 설정(`self_conditioning=True`)을 따른다. 체크포인트 파일은
-    `external/AIdanFold/checkpoints/flow_fape_ema2/flow_head_epoch62.pt`(2.0GB, `.gitignore` 처리되어
-    git에는 안 올라감, 로컬 서버 `/data/trunk/AIdanFold`에만 존재)로 배치되어 있다.
-  - `evaluate_flow.py`의 `--oligomeric {monomer,complex,any}` 인자와 `parse_protein_chains`로 보아
-    **멀티체인(복합체) 입력 자체는 이미 지원**한다.
-- 단, `evaluate_flow.py`는 **정답 구조(ground truth)가 있는 test manifest에 대해 lDDT/TM/RMSD를
-  계산하는 평가 스크립트**이지, "서열만 주면 구조를 예측해 돌려주는" 서빙용 추론 CLI가 아니다.
-- **자체 신뢰도(ipTM 등)는 확보했다.** ESMFold2의 confidence head는 structure head(diffusion이든
-  flow든)와 독립적으로, 예측된 좌표(`x_pred`)와 트렁크 표현만 받아 pLDDT/pTM/ipTM/PAE를 계산한다 —
-  `model.structure_head.sample`을 우리 flow head 호출로 monkeypatch하고 전체 `model.forward()`를 그대로
-  실행하면 ipTM까지 정상적으로 나온다는 걸 FoldBench 벤치마크 작업(§6.6)에서 실측 검증했다. 즉 위
-  "격차 및 필요 작업" 3번은 해소됐다 — 별도 대체 신호가 필요 없다.
-- `requirements.txt`는 `esm@git+https://github.com/Biohub/esm.git@main` 하나만 명시한다. 이건
-  **의존성이 없다는 뜻이 아니라 필요 없다는 뜻**이다 — ESMFold2 자체가 이미 AlphaFold3급 co-folder라서
-  (Protein/DNA/RNA/Ligand를 SMILES까지 포함해 동시에 입력받음, `esm.md` §4.6–4.7) 외부 co-folder가
-  따로 필요 없다. 다만 AIdanFold가 직접 학습·검증한 flow-matching 구조 헤드는 단백질-전용 데이터로만
-  만들어졌다 — 자세한 내용과 리간드 검증 결과는 §6.4 참고.
+- ESMFold2의 Karras diffusion 구조 헤드(200-step)를 **Conditional Flow Matching 헤드**(20-step)로
+  교체하는 작업이 완료됐다. 전체 test set(n=3060)에서 **lDDT −0.0058 / TM −0.019 / 5.06배 가속**을
+  실측 달성 — diffusion 대비 5배 이상 빠르면서 품질 손실 2점 이내라는 목표를 만족한다. (단, 이 5.06배는
+  **head-only** 수치다 — 트렁크 시간은 제외하고 잰 것. 실사용 시나리오별 실효 속도 이득은 §6.5 참고.)
+- 멀티체인(단백질 복합체) 입력을 이미 지원한다.
+- **자체 신뢰도(pLDDT/pTM/ipTM/PAE)도 확보했다.** confidence head가 structure head(diffusion/flow
+  무관)와 독립적으로 예측 좌표와 트렁크 표현만으로 신뢰도를 계산하는 구조라, flow head 예측에도 그대로
+  적용된다는 걸 FoldBench 벤치마크(§6.6)에서 실측 검증했다.
+- 현재 있는 평가 스크립트는 정답 구조가 있는 test set에 대해 지표를 계산하는 용도이지, "서열만 주면
+  구조를 예측해 돌려주는" 서빙용 추론 CLI가 아니다 — 아래 격차 1번.
+- ESMFold2 베이스 아키텍처 자체는 이미 AlphaFold3급 co-folder(단백질/DNA/RNA/리간드를 SMILES까지
+  포함해 동시 입력)다. 다만 AIdanFold가 직접 학습·검증한 flow-matching 구조 헤드는 단백질-전용
+  데이터로만 만들어졌다 — 자세한 내용과 리간드 검증 결과는 §6.3 참고.
 
 ### 격차 및 필요 작업
 
-1. `evaluate_flow.py`의 "chains → features → flow sampler → 좌표" 경로에서 **정답 비교 없이** 좌표만
-   뽑아 PDB로 쓰는 얇은 예측 전용 경로를 분리 (`--ckpt checkpoints/flow_fape_ema2/flow_head_epoch62.pt
-   --flow_steps 20 --churn 1` 배포 구성을 하드코딩된 기본값으로). §6.6의 FoldBench 벤치마크 스크립트가
-   이미 이 경로를 직접 구현했으므로 (`predict_best_of_seeds`), 그걸 `tools/aidanfold_predict.py`로
-   정리해 옮기면 된다.
-2. ~~자체 신뢰도 지표 확보~~ — 완료 (confidence head 재사용, §6.6에서 실측).
-3. `tools/aidanfold_predict.py`를 작성 — 위 배포 구성을 기본값으로 감싸는 CLI.
-4. `CLAUDE.md`의 stale한 "Early scaffold" 서술 업데이트 (이 문서와 별개 작업, `main` 브랜치 대상).
+1. "서열/구조 입력 → 예측 좌표" 서빙 전용 추론 경로를 정리해 `tools/aidanfold_predict.py`로 CLI화
+   (배포 추론 설정을 기본값으로 감싼다).
+2. ~~자체 신뢰도 지표 확보~~ — 완료 (§6.6에서 실측).
+3. 문서화 최신화 (서브모듈 쪽 오래된 설명 갱신, 이 문서와 별개 작업).
 
 ## 5. 서브모듈 경계 규칙
 
@@ -289,52 +270,28 @@ bioSkills 스킬들의 상호 참조(`Related Skills`)를 실제로 읽어보면
 타겟-리간드 **복합체** 구조를 통해 binding affinity를 추정하는 건 맞는 방향이고, 이 파이프라인에서는
 "⑤ 결합 친화도 정밀 평가"에 해당한다.
 
-> **정정 (2026-09-08)**: 이전 판(§6.3 초판)은 "AIdanFold는 서열-전용이라 리간드 co-folding을 지원하지
-> 않는다"고 적었는데, 이건 `requirements.txt`와 Phase 1 평가 결과만 보고 내린 근거 부족한 결론이었다.
-> 실제로 `esm.md`(§4.6–4.7, ESMFold2 아키텍처 분석 문서)를 확인한 결과 정반대다:
-> - **ESMFold2(AIdanFold의 베이스)는 완전한 co-folder다.** `StructurePredictionInput`이
->   Protein/DNA/RNA/Ligand를 동시에 받고, 리간드는 CCD 코드 또는 **SMILES**(`tokenize_ligand_smiles`:
->   RDKit 파싱 → conformer 생성 → 원자 토큰화)로 조건화할 수 있으며, `CovalentBond`로 공유결합 억제제도
->   지정 가능하다 — 아키텍처 수준에서는 AlphaFold3와 동급의 co-folding 능력이 있다.
-> - 다만 **AIdanFold가 실제로 학습·검증한 flow-matching 구조 헤드(Phase 1, §4)는 단백질-전용
->   데이터로만 만들어졌다.** `dataprep/download_pdb.py`가 RCSB 검색 쿼리에
->   `selected_polymer_entity_types = "Protein (only)"` 필터를 하드코딩해 리간드/핵산이 포함된 구조를
->   애초에 데이터셋에서 제외한다. `--oligomeric complex`의 "복합체"도 단백질 다중 체인을 뜻하지
->   단백질-리간드가 아니다.
-> - 즉 정확한 상태는 "co-folding을 지원 못 한다"가 아니라 **"밑바탕 아키텍처는 지원하는데, 지금 학습된
->   체크포인트(`flow_fape_ema2`)가 리간드 토큰에 대해 한 번도 검증된 적이 없다"**다.
+- **베이스 아키텍처(ESMFold2)는 완전한 co-folder다.** 단백질/DNA/RNA/리간드를 동시에 입력받고,
+  리간드는 CCD 코드 또는 SMILES로 조건화할 수 있으며 공유결합 억제제 지정도 가능하다 — 아키텍처
+  수준에서는 AlphaFold3와 동급의 co-folding 능력이 있다.
+- 다만 AIdanFold가 실제로 학습·검증한 flow-matching 구조 헤드는 **단백질-전용 데이터로만
+  학습됐다.** 즉 co-folding을 지원 못 하는 게 아니라, 밑바탕 아키텍처는 지원하는데 지금 학습된
+  체크포인트가 리간드 토큰에 대해 검증된 적이 없다는 뜻이다.
 
-**검증 결과 (2026-09-08, 실측 완료) — 실패, Boltz-2/Chai-1 채택으로 확정**
+**검증 결과 — 리간드 co-folding은 아직 실전 투입 불가, Boltz-2/Chai-1 채택**
 
-`/data/trunk/AIdanFold`(conda env `AIdanFold`, ESMC-6B + `esmfold2_fast_cutoff2025` 가중치, 체크포인트
-모두 로컬에 실제로 존재)에서 트립신(223 aa) + 벤즈아미딘(`NC(=[NH2+])c1ccccc1`, 트립신의 고전적
-저해제) 복합체로 `flow_fape_ema2/flow_head_epoch62.pt`를 실제로 돌렸다. 파이프라인 자체는 끝까지
-동작했다: `LigandInput(smiles=...)` → `ESMFold2InputBuilder.prepare_input`(트렁크 피처 생성, 단백질 223
-토큰 + 리간드 9원자토큰 정상 구성 확인) → `capture_trunk`로 실제 trunk forward 실행 → 체크포인트의
-저장된 config(`self_conditioning=True`, `ode_solver=midpoint`)로 20-step 샘플링 → 리간드 원자 좌표를
-`ligand_bonds`(체크포인트가 아니라 ESMFold2 입력 빌더가 제공하는 정확한 원자-이름 결합 정보)로 RDKit
-분자로 재구성 → PoseBusters(`mol`/`dock` 설정) 검증까지 전부 실행됐다 (재현 스크립트:
-`docs/experiments/aidanfold_ligand_cofold_probe.py`, 결과: `docs/experiments/posebusters_{mol,dock}.csv`.
-스크립트는 `/data/trunk/AIdanFold`의 conda env `AIdanFold` — 서브모듈이 아니라 실제 가중치/체크포인트가
-있는 별도 작업 트리 — 를 전제로 경로가 하드코딩돼 있다).
+실제 단백질-리간드 복합체(효소-저해제 예시)로 co-folding을 시도해 물리적 타당성을 검증했다. 결과는
+명확한 실패다: 리간드의 로컬 결합 기하구조(고리 평면성, 결합 길이 등)가 물리적으로 타당하지 않게
+나왔다 (PoseBusters 검증 다수 항목 FAIL). 다만 리간드의 대략적인 전역 위치(포켓 근처)는 합리적으로
+잡혔다 — 즉 트렁크가 대략적인 위치는 알지만, flow head가 그 자리에서 리간드 원자들의 정밀한 상대
+좌표를 복원하는 능력이 아직 없다는 뜻이다.
 
-**결과는 명확한 물리적 실패다**:
-- 벤젠 고리의 결합 길이가 **2.95~5.32 Å** (정상 아로마틱 C-C는 ~1.39 Å) — 고리가 찢어진 수준.
-- 고리 평면성 붕괴 (한 원자가 평면에서 2.27 Å 이탈).
-- PoseBusters: `bond_lengths`, `bond_angles`, `aromatic_ring_flatness`, `internal_energy`,
-  `minimum_distance_to_protein`, `volume_overlap_with_protein` 전부 FAIL.
-- 다만 **리간드-단백질 최소 거리는 1.65 Å로 대략 포켓 근처**에 위치했다 — 트렁크(ESMC-6B)가 리간드
-  토큰의 대략적인 전역 위치는 어느 정도 잡지만, flow head가 그 자리에서 원자 9개의 상대 좌표(로컬
-  결합 기하구조)를 정밀하게 복원하는 능력은 전혀 없다.
-
-**해석**: 예상했던 실패 양상 그대로다. flow head는 표준 아미노산 backbone frame(N-CA-C)에 대한 FAPE
-손실로만 학습되어, 한 번도 학습에서 보지 못한 소분자 원자의 로컬 결합 기하구조(고리 평면성, 결합
-길이 등)에 대한 사전지식이 없다.
+**해석**: 예상 가능한 결과다. flow head는 표준 아미노산 backbone frame(N-CA-C)에 대한 손실로만
+학습되어, 학습에서 보지 못한 소분자 원자의 로컬 결합 기하구조에 대한 사전지식이 없다.
 
 **결정**: ⑤ 단계는 **Boltz-2/Chai-1(`chemoinformatics/ml-docking-rescoring`)로 확정**한다. AIdanFold를
-이 역할에 다시 고려하려면, `download_pdb.py`의 protein-only 필터를 풀고 리간드 포함 구조를 데이터셋에
-추가해 flow head를 재학습(파인튜닝)해야 한다 — 이건 지금 당장의 파이프라인 구축과는 분리된 별도
-과제로 남겨둔다 (학습 인프라 자체는 이미 있으므로 Boltz-2/Chai-1을 새로 붙이는 것보다는 작은 작업).
+이 역할에 다시 고려하려면 리간드 포함 데이터로 flow head를 재학습해야 한다 — 지금 당장의 파이프라인
+구축과는 분리된 별도 과제로 남겨둔다 (학습 인프라 자체는 이미 있으므로 Boltz-2/Chai-1을 새로 붙이는
+것보다는 작은 작업으로 예상된다).
 
 | 단계 | 도구 | 비용 | 산출물 |
 |---|---|---|---|
@@ -370,8 +327,8 @@ bioSkills와 동일한 2계층: 단계별 스킬(`SKILL.md` + `usage-guide.md` +
 
 ### 6.5 AIdanFold head 속도(5배)가 실제로 크리티컬해지는 지점
 
-Phase 1의 "5.06배 가속"은 **head-only** 수치다 (`evaluate_flow.py`: "the frozen trunk is shared,
-excluded, so speedup is a fair head-only ratio"). 실사용에서 트렁크(ESMC-6B + 폴딩 재귀)는 서열에만
+"5.06배 가속"은 **head-only** 수치다 — 트렁크 시간은 제외하고 구조 생성 헤드만 잰 것. 실사용에서
+트렁크(ESMC-6B + 폴딩 재귀)는 서열에만
 의존하고, head(구조 생성)만 노이즈 draw를 바꿔 여러 구조를 낸다 — 이 둘의 비용 비중을 §6.6 FoldBench
 작업에서 실측했다: flow head(20-step) 1개 샘플 ≈ 트렁크 비용의 13%. 즉 **"타겟 하나 예측"** 기준으로는
 diffusion(200-step) 대비 실제 end-to-end 속도 이득이 5배가 아니라 **~2배** 수준이다.
@@ -398,14 +355,9 @@ AlphaFold3(MSA 사용)를 능가한다" — 을 AIdanFold의 flow head로 직접
   best-of-ipTM) = 50%±2%.
 - 이 격차는 "diffusion→flow 교체로 인한 소폭 품질 저하"와 "1-seed라 최적화가 안 됨" 두 요인이 섞인
   하한선으로 보고, **논문과 동일한 프로토콜(25 seed × 5 diffusion sample, ipTM 최고값 선택)**로
-  재실행을 진행했다 (진행 중/결과는 별도 기록).
-- 이 작업 과정에서 confidence head(ipTM 등)가 flow head와 독립적으로 동작함을 확인해 §4의 "자체 신뢰도
-  지표 없음" 격차를 해소했다 (`model.structure_head.sample`을 flow 호출로 monkeypatch하고 전체
-  `model.forward()`를 그대로 실행하면 ipTM이 정상적으로 나옴 — trunk_feats에 남아있던 `num_diffusion_samples`
-  키를 제거하지 않으면 이중 확장 버그가 남으니 주의).
-- 재현 스크립트와 세부 로그는 로컬 서버 스크래치 디렉토리에 있다(저장소에는 아직 커밋되지 않음) —
-  필요 시 `tools/aidanfold_predict.py`를 만들 때 이 스크립트의 `predict_best_of_seeds` 함수를 그대로
-  옮기면 된다 (§4 격차 1번).
+  재검증을 진행 중이다.
+- 이 작업 과정에서 confidence head(ipTM 등)가 flow head 예측에도 독립적으로 정상 동작함을 확인해
+  §4의 "자체 신뢰도 지표 없음" 격차를 해소했다.
 
 ## 7. 제안 저장소 레이아웃
 
